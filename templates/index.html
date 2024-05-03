@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Верификация</title>
+    <style>
+        #video-container {
+            position: relative;
+            width: 640px;
+            margin: 0 auto;
+        }
+
+        #video {
+            display: block;
+            margin: 20px auto;
+            width: 640px;
+            height: 480px;
+        }
+
+        #controls {
+            position: absolute;
+            top: 20px; /* Расстояние от верхнего края видео */
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex; /* Размещение кнопок в строку */
+        }
+
+        #controls button {
+            margin: 5px;
+            padding: 8px 16px;
+            border: 2px solid #00aaff;
+            border-radius: 10px;
+            background-color: transparent;
+            color: #00aaff;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        #controls button:hover {
+            background-color: #00aaff;
+            color: #fff;
+        }
+
+        button {
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+<h1 style="color: #000000; margin-top: 30px; text-align: center;">Верификация</h1>
+<div id="video-container" style="position: relative;">
+
+    <video id="video" width="640" height="480" autoplay></video>
+    <div id="controls" style="position: absolute; top: 0; left: 50%; transform: translateX(-50%);">
+        <button id="start" onclick="startStream()">Начать запись</button>
+        <button id="stop">Остановить запись</button>
+    </div>
+</div>
+<canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
+
+
+<script>
+    var video = document.getElementById('video');
+    var ws = new WebSocket('ws://localhost:8000/ws');
+
+    function startStream() {
+        navigator.mediaDevices.getUserMedia({video: true})
+            .then(stream => {
+                video.srcObject = stream;
+                video.play();
+                setInterval(() => {
+                    captureFrame();
+                }, 100); // Отправка кадра каждые 100 мс
+            })
+            .catch(console.error);
+    }
+
+    function captureFrame() {
+        var canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        var data = canvas.toDataURL('image/jpeg').split(',')[1];
+        ws.send(data);
+    }
+</script>
+</body>
