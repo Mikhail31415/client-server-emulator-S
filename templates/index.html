@@ -63,17 +63,42 @@
     var video = document.getElementById('video');
     var ws = new WebSocket('ws://localhost:8000/ws');
 
+    var source = new EventSource('/events');
+
+    var intervalId;
+
+    ws.onopen = function () {
+        ws.send('{{ api_key }}');
+    };
+
+
+    source.onmessage = function (event) {
+        var data = JSON.parse(event.data);
+        if (data.message === "Верификация успешна") {
+            clearInterval(intervalId);
+            source.close();
+            displayMessage.textContent = data.message;
+        }
+        else{
+            clearInterval(intervalId);
+            source.close();
+            displayMessage.textContent = "Верификация не удалась";
+        }
+    };
+
+
     function startStream() {
         navigator.mediaDevices.getUserMedia({video: true})
             .then(stream => {
                 video.srcObject = stream;
                 video.play();
-                setInterval(() => {
+                intervalId = setInterval(() => {
                     captureFrame();
-                }, 100); // Отправка кадра каждые 100 мс
+                }, 100);
             })
             .catch(console.error);
     }
+
 
     function captureFrame() {
         var canvas = document.createElement('canvas');

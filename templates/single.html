@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Image</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f4f4f9;
+            color: #333;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        h1, h2 {
+            color: #4A90E2;
+        }
+        form, #camera-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin: 20px;
+            width: 300px;
+            text-align: center;
+        }
+        input[type='file'] {
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            width: calc(100% - 24px);
+            margin-bottom: 10px;
+        }
+        button {
+            background-color: #4A90E2;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 10px 20px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #357ABD;
+        }
+        #video {
+            width: 100%;
+            border-radius: 4px;
+        }
+        #canvas {
+            display: none;
+            margin-top: 10px;
+            width: 100%;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Upload an Image</h1>
+    <form action="/send_photo" method="post" enctype="multipart/form-data">
+        <input type="file" name="photo" accept="image/*" required>
+        <button type="submit">Send Photo</button>
+    </form>
+
+    <div id="camera-section">
+        <h2>Or take a photo</h2>
+        <video id="video" autoplay></video>
+        <button id="snap">Snap Photo</button>
+        <canvas id="canvas"></canvas>
+        <button id="send" style="margin-top: 10px;">Send Photo</button>
+    </div>
+
+   <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const context = canvas.getContext('2d');
+    const snap = document.getElementById('snap');
+    const send = document.getElementById('send');
+
+    navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => { video.srcObject = stream })
+        .catch(error => { alert('Cannot access camera: ' + error.message); });
+
+    snap.onclick = function() {
+        canvas.width = video.videoWidth; // Установка ширины canvas равной ширине видео
+        canvas.height = video.videoHeight; // Установка высоты canvas равной высоте видео
+        canvas.style.display = 'block';
+        context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight); // Использование размеров видео для отрисовки на canvas
+    };
+    send.onclick = function() {
+        canvas.toBlob(function(blob) {
+            const formData = new FormData();
+            formData.append('photo', blob, 'snapshot.jpg');
+            fetch('/send_photo', { method: 'POST', body: formData })
+                .then(response => response.json())
+                .then(data => console.log(data))
+                .catch(error => console.error('Error:', error));
+        });
+    };
+</script>
+</body>
+</html>
